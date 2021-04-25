@@ -25,13 +25,13 @@ def to_bad_img(x, mask):
     :param mask:采样方式
     :return:
     """
-    x = (x + 1.) / 2.
-    fft = scipy.fftpack.fft2(x[:, :, 0])
-    fft = scipy.fftpack.fftshift(fft)
-    fft = fft * mask
-    fft = scipy.fftpack.ifftshift(fft)
-    x = scipy.fftpack.ifft2(fft)
-    x = np.abs(x)
+    x = (x + 1.) / 2.   # 映射至0-1
+    fft = scipy.fftpack.fft2(x[:, :, 0])    # 2D傅里叶变换
+    fft = scipy.fftpack.fftshift(fft)   # 将四周分散的信号移至中间
+    fft = fft * mask                    # 采样方法  mask为0、1矩阵
+    fft = scipy.fftpack.ifftshift(fft)  #
+    x = scipy.fftpack.ifft2(fft)        # 反傅里叶变换
+    x = np.abs(x)                       #
     x = x * 2 - 1
     return x[:, :, np.newaxis]
 
@@ -51,8 +51,8 @@ def ssim(data):
     """
     x_good, x_bad = data
     x_good = np.squeeze(x_good)  # Remove single-dimensional entries from the shape of an array.
-    x_bad = np.squeeze(x_bad)
-    ssim_res = skimage.measure.compare_ssim(x_good, x_bad)
+    x_bad = np.squeeze(x_bad)    # Remove single-dimensional entries from the shape of an array.
+    ssim_res = skimage.measure.compare_ssim(x_good, x_bad)    # 计算SSIM
     return ssim_res
 
 
@@ -61,8 +61,8 @@ def psnr(data):
     :param data: tuple or list just have two elements
     :return: psnr of good data and bad data
     """
-    x_good, x_bad = data
-    psnr_res = skimage.measure.compare_psnr(x_good, x_bad)
+    x_good, x_bad = data    # 高分辨率与低分辨率图片
+    psnr_res = skimage.measure.compare_psnr(x_good, x_bad)  # 计算psnr
     return psnr_res
 
 
@@ -73,15 +73,15 @@ def vgg_prepro(x):
     """
     x = imresize(x, [244, 244], interp='bilinear',
                  mode=None)  # resize the iamge.size to [244,244],rescale the value to [0, 255].
-    x = np.tile(x, 3)  # 重复三次
-    x = x / 127.5 - 1
+    x = np.tile(x, 3)    # 重复三次 相当于通道为3
+    x = x / 127.5 - 1    # 转换x的范围-1~1
     return x
 
 
 def logging_setup(log_dir):
     """
     :param log_dir: str like , a director for store your logging
-    :return: 1th - 3th are object of logger ,4th - 5th are the filename to store logging
+    :return: 1th - 3th are objects of logger ,4th - 5th are the filename to store logging
     """
     current_time_str = strftime("%Y_%m_%d_%H_%M_%S", localtime())  # 获取当前时间点
     log_all_filename = os.path.join(log_dir, 'log_all_{}.log'.format(current_time_str))

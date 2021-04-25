@@ -30,7 +30,7 @@ for i in range(train_all_num):  #将验证集与训练集分为两部分
 f_test = os.listdir(testing_data_path) # 加载测试集
 
 train_3d_num, val_3d_num, test_3d_num = len(f_train), len(f_val), len(f_test)  # 训练集 验证集 测试集数量
-#train_3d_num, val_3d_num  = len(f_train), len(f_val)
+# train_3d_num, val_3d_num  = len(f_train), len(f_val)
 
 X_train = []
 for fi, f in enumerate(f_train):  # fi为训练集索引 f为训练集的文件名
@@ -43,7 +43,7 @@ for fi, f in enumerate(f_train):  # fi为训练集索引 f为训练集的文件�
         img_2d = img[:, :, i]
         # filter out 2d images containing < 10% non-zeros
         if float(np.count_nonzero(img_2d)) / img_2d.size >= preserving_ratio:
-            img_2d = img_2d / 127.5 - 1            # 数据映射至-1~1 先当与数据预处理操作
+            img_2d = img_2d / 127.5 - 1            # 数据映射至-1~1 相当与数据预处理操作
             img_2d = np.transpose(img_2d, (1, 0))  # 转置 将图片摆正
             X_train.append(img_2d)                 # 加入训练集
 

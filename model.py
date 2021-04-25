@@ -3,22 +3,31 @@ from utils import *
 import tensorlayer as tl
 # discriminator 网络定义
 def discriminator(input_images, is_train=True, reuse=False):
-    w_init = tf.random_normal_initializer(stddev=0.02)
-    b_init = None
-    gamma_init = tf.random_normal_initializer(1., 0.02)
-    df_dim = 64
+    """
+    :param input_images: 输入判别器的数据
+    :param is_train: 是否为训练
+    :param reuse: 是否允许层的名字重用
+    :return: net_ho, logits  最后一层的输出值与应用激活函数后的值
+    """
+    w_init = tf.random_normal_initializer(stddev=0.02)  # 服从均值为0 标准差为0.02
+    b_init = None      # 偏置初始化
+    gamma_init = tf.random_normal_initializer(1., 0.02)     # 服从均值为1 标准差为0.02
+    df_dim = 64     # filter个数的基数
 
-    with tf.variable_scope("discriminator", reuse=reuse):
-        tl.layers.set_name_reuse(reuse)
+    with tf.variable_scope("discriminator", reuse=reuse):   # 变量域  Initialize the context manager.
+        tl.layers.set_name_reuse(reuse)     # 不同层之间是否允许重用层名字
 
-        net_in = InputLayer(input_images,
+        net_in = InputLayer(input_images,  # 输入层
                             name='input')
 
+        # Conv2d  net_in：卷积输入  df_dim：卷积核数量  (4，4)：卷积核大小 (2，2):步长  act:这一层的激活函数
+        # padding：填充方法  W_init:权重
         net_h0 = Conv2d(net_in, df_dim, (4, 4), (2, 2), act=lambda x: tl.act.lrelu(x, 0.2),
                         padding='SAME', W_init=w_init, name='h0/conv2d')
 
         net_h1 = Conv2d(net_h0, df_dim * 2, (4, 4), (2, 2), act=None,
                         padding='SAME', W_init=w_init, b_init=b_init, name='h1/conv2d')
+        # normalization layer ,  对net_h1进行标准化，并应用激活函数lrelu
         net_h1 = BatchNormLayer(net_h1, act=lambda x: tl.act.lrelu(x, 0.2),
                                 is_train=is_train, gamma_init=gamma_init, name='h1/batchnorm')
 
@@ -62,14 +71,15 @@ def discriminator(input_images, is_train=True, reuse=False):
         net = Conv2d(net, df_dim * 8, (3, 3), (1, 1), act=None,
                      padding='SAME', W_init=w_init, b_init=b_init, name='h7_res/conv2d3')
         net = BatchNormLayer(net, is_train=is_train, gamma_init=gamma_init, name='h7_res/batchnorm3')
-
+        # wise 以....方向   net_h7 与 net对应元素相加
         net_h8 = ElementwiseLayer(layer=[net_h7, net], combine_fn=tf.add, name='h8/add')
-        net_h8.outputs = tl.act.lrelu(net_h8.outputs, 0.2)
-
+        net_h8.outputs = tl.act.lrelu(net_h8.outputs, 0.2)   # 再对net_h8的输出应用激活函数lrelu
+        # FlattenLayer 将一个高维输入数据重构为低维的数据
         net_ho = FlattenLayer(net_h8, name='output/flatten')
+        # 全连接层  输出一个值
         net_ho = DenseLayer(net_ho, n_units=1, act=tf.identity, W_init=w_init, name='output/dense')
-        logits = net_ho.outputs
-        net_ho.outputs = tf.nn.sigmoid(net_ho.outputs)
+        logits = net_ho.outputs  # 保存分类的具体值
+        net_ho.outputs = tf.nn.sigmoid(net_ho.outputs)  # 应用激活函数后的值
 
     return net_ho, logits
 
