@@ -101,8 +101,8 @@ def main_train():
 
     # define generator network
     if tl.global_flag['model'] == 'unet':
-        net = u_net_bn(t_image_bad, is_train=True, reuse=False, is_refine=False)
-        net_test = u_net_bn(t_image_bad, is_train=False, reuse=True, is_refine=False)
+        net = u_net_bn(t_image_bad, is_train=True, reuse=False, is_refine=False)  # 此网络训练使用
+        net_test = u_net_bn(t_image_bad, is_train=False, reuse=True, is_refine=False)  # 此网络测试使用
         net_test_sample = u_net_bn(t_image_bad_samples, is_train=False, reuse=True, is_refine=False)
 
     elif tl.global_flag['model'] == 'unet_refine':
@@ -113,8 +113,8 @@ def main_train():
         raise Exception("unknown model")
 
     # define discriminator network
-    net_d, logits_fake = discriminator(net.outputs, is_train=True, reuse=False)  #
-    _, logits_real = discriminator(t_image_good, is_train=True, reuse=True)
+    net_d, logits_fake = discriminator(net.outputs, is_train=True, reuse=False)  # 生成器在判别器上的输出值
+    _, logits_real = discriminator(t_image_good, is_train=True, reuse=True)     # 真是图像在判别器上的输出值
 
     # define VGG network
     net_vgg_conv4_good, _ = vgg16_cnn_emb(t_image_good_244, reuse=False)
@@ -124,7 +124,7 @@ def main_train():
 
     print('[*] define loss functions ... ')
 
-    # discriminator loss
+    # discriminator loss  希望 logits_real越接近1越好  logits_fake越接近0越好
     d_loss1 = tl.cost.sigmoid_cross_entropy(logits_real, tf.ones_like(logits_real), name='d1')
     d_loss2 = tl.cost.sigmoid_cross_entropy(logits_fake, tf.zeros_like(logits_fake), name='d2')
     d_loss = d_loss1 + d_loss2
@@ -138,12 +138,12 @@ def main_train():
         net_vgg_conv4_gen.outputs),
         axis=[1, 2, 3]))
 
-    # generator loss (pixel-wise)
+    # generator loss (pixel-wise)  g_nmse_a：为生成器所生成图片
     g_nmse_a = tf.sqrt(tf.reduce_sum(tf.squared_difference(net.outputs, t_image_good), axis=[1, 2, 3]))
     g_nmse_b = tf.sqrt(tf.reduce_sum(tf.square(t_image_good), axis=[1, 2, 3]))
     g_nmse = tf.reduce_mean(g_nmse_a / g_nmse_b)
 
-    # generator loss (frequency)
+    # generator loss (frequency)  频域上的
     fft_good_abs = tf.map_fn(fft_abs_for_map_fn, t_image_good)
     fft_gen_abs = tf.map_fn(fft_abs_for_map_fn, net.outputs)
     g_fft = tf.reduce_mean(tf.reduce_mean(tf.squared_difference(fft_good_abs, fft_gen_abs), axis=[1, 2]))

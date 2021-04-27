@@ -13,15 +13,15 @@ def main_test():
     # =================================== BASIC CONFIGS =================================== #
 
     print('[*] run basic configs ... ')
-
+    # 日志文件目录
     log_dir = "log_inference_{}_{}_{}".format(model_name, mask_name, mask_perc)
     tl.files.exists_or_mkdir(log_dir)
     _, _, log_inference, _, _, log_inference_filename = logging_setup(log_dir)
-
+    # 模型检查点
     # checkpoint_dir = "checkpoint_inference_{}_{}_{}".format(model_name, mask_name, mask_perc)
     checkpoint_dir = "checkpoint_{}_{}_{}".format(model_name, mask_name, mask_perc)
     tl.files.exists_or_mkdir(checkpoint_dir)
-
+    # 测试所得图片的保存路径
     save_dir = "samples_inference_{}_{}_{}".format(model_name, mask_name, mask_perc)
     tl.files.exists_or_mkdir(save_dir)
 
@@ -84,17 +84,18 @@ def main_test():
     # ==================================== INFERENCE ==================================== #
 
     sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True))
+    # 加载模型 此处若是加载时报错很可能是因为numpy的版本的原因  需要点击报错的代码处，根据报错改正源码
     tl.files.load_and_assign_npz(sess=sess,
                                  name=os.path.join(checkpoint_dir, tl.global_flag['model']) + '.npz',
                                  network=net_test)
-
+    # 产生五十个随机数
     idex = tl.utils.get_random_int(min=0, max=len(X_test) - 1, number=sample_size, seed=config.TRAIN.seed)
     X_samples_good = X_test[idex]
-    X_samples_bad = threading_data(X_samples_good, fn=to_bad_img, mask=mask)
+    X_samples_bad = threading_data(X_samples_good, fn=to_bad_img, mask=mask)  # 产生低分辨率图片
 
-    x_good_sample_rescaled = (X_samples_good + 1) / 2
-    x_bad_sample_rescaled = (X_samples_bad + 1) / 2
-
+    x_good_sample_rescaled = (X_samples_good + 1) / 2   # 转换值0~1
+    x_bad_sample_rescaled = (X_samples_bad + 1) / 2     # 转换值0~1
+    # 保存50个样例图片
     tl.visualize.save_images(X_samples_good,
                              [5, 10],
                              os.path.join(save_dir, "sample_image_good.png"))
